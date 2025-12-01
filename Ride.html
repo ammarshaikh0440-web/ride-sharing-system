@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride Queue Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font for a clean, modern look -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        .scroll-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-start justify-center">
+
+    <div class="w-full max-w-6xl">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-indigo-700 mb-2">Dispatch Dashboard</h1>
+            <p class="text-gray-500">Simulating Fixed Routes, Rider Queue, and Driver Assignment</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Col 1: Rider/Action Input Panel -->
+            <div class="lg:col-span-1 space-y-6">
+
+                <!-- Add Rider Section -->
+                <div class="card bg-white p-6 rounded-xl border border-gray-200">
+                    <h2 class="text-2xl font-semibold text-indigo-600 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                        Add New Rider
+                    </h2>
+                    <input type="text" id="riderNameInput" placeholder="Enter rider's name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">
+                    <button onclick="addRiderAction()" class="btn-primary mt-4 w-full bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-600 shadow-md">
+                        Add to Queue
+                    </button>
+                    <div id="riderStatus" class="mt-3 text-sm font-medium"></div>
+                </div>
+
+                <!-- Request Ride Section -->
+                <div class="card bg-white p-6 rounded-xl border border-gray-200">
+                    <h2 class="text-2xl font-semibold text-indigo-600 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-4m0 0l-3 3m3-3l3 3m-6-3h6m0 0v4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Dispatch Next Ride
+                    </h2>
+                    <label for="startLocation" class="block text-sm font-medium text-gray-700 mb-1">Start Location</label>
+                    <select id="startLocation" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 mb-3">
+                        <option value="">Select Start</option>
+                    </select>
+                    
+                    <label for="endLocation" class="block text-sm font-medium text-gray-700 mb-1">End Location</label>
+                    <select id="endLocation" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">
+                        <option value="">Select End</option>
+                    </select>
+
+                    <button onclick="assignRideAction()" class="btn-primary mt-6 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 shadow-md">
+                        Assign Driver to Next Rider
+                    </button>
+                    <div id="assignmentStatus" class="mt-3 text-sm font-medium"></div>
+                </div>
+            </div>
+
+            <!-- Col 2: Live Status & Queue -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Rider Queue Status -->
+                <div class="card bg-white p-6 rounded-xl border border-gray-200 h-96 flex flex-col">
+                    <h2 class="text-2xl font-semibold text-purple-600 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c1.657 0 3 .895 3 2s-1.343 2-3 2-3 .895-3 2 1.343 2 3 2m-3-2h6m-9-2h12M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"></path></svg>
+                        Rider Queue (FIFO)
+                    </h2>
+                    <div id="riderQueueDisplay" class="flex-grow scroll-container overflow-y-auto space-y-3 pr-2">
+                        <!-- Queue items will be injected here -->
+                    </div>
+                    <p class="mt-4 text-gray-500 text-sm italic" id="queueCount">0 riders waiting.</p>
+                </div>
+                
+                <!-- Fixed Route Display -->
+                <div class="card bg-white p-6 rounded-xl border border-gray-200">
+                    <h2 class="text-2xl font-semibold text-yellow-600 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Fixed City Routes
+                    </h2>
+                    <ul id="routeList" class="space-y-2 text-gray-700 list-disc list-inside">
+                        <!-- Routes will be injected here -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Col 3: Live Match Output & Drivers -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Match Output -->
+                <div class="card bg-indigo-50 p-6 rounded-xl shadow-xl h-64 flex flex-col justify-center border-2 border-indigo-200">
+                    <h2 class="text-2xl font-semibold text-indigo-700 mb-4 text-center">
+                        <svg class="w-7 h-7 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.807 3.42 3.42 0 014.288 0 3.42 3.42 0 001.946.807 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.288 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.288 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.288 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                        Latest Ride Match
+                    </h2>
+                    <div id="matchOutput" class="text-center text-gray-800">
+                        <p class="text-gray-400 italic">Dispatch a ride to see the details here.</p>
+                    </div>
+                </div>
+
+                <!-- Driver Pool Status -->
+                <div class="card bg-white p-6 rounded-xl border border-gray-200">
+                    <h2 class="text-2xl font-semibold text-red-600 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2m0 0h2m-2 0v2m0 0h-2m2 0V8m-3 3v2m3-2h2m0 0v2m2-2h-2m0 0h2m-2-2h-2m-2 2h2m-2-2v2M4 4h16v16H4V4z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+                        Fixed Driver Pool
+                    </h2>
+                    <div id="driverList" class="flex flex-wrap gap-2 justify-center">
+                        <!-- Drivers will be injected here -->
+                    </div>
+                    <p class="mt-4 text-xs text-gray-500 text-center">Note: Drivers are fixed to specific routes.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // JAVASCRIPT DATA STRUCTURES & LOGIC
+        // ============================================
+
+        // 1. Rider Queue (Initialized to be empty)
+        let riderQueue = [];
+
+        // 2. Driver Pool 
+        const DRIVERS = ["Ali", "Bilal", "Usman", "Hamza"];
+
+        // 3. Fixed Route Map (Updated: Rawalpindi -> Lalkurti)
+        const ROUTES = {
+            // Lalkurti routes
+            "Lalkurti-Sadar": { distance: 10, driverIndex: 0 }, // Ali
+            "Lalkurti-Islamabad": { distance: 15, driverIndex: 1 }, // Bilal
+            // Islamabad routes
+            "Islamabad-Lalkurti": { distance: 15, driverIndex: 2 }, // Usman
+            "Islamabad-FaisalMasjid": { distance: 5, driverIndex: 3 } // Hamza
+        };
+        // Lalkurti replaces Rawalpindi in the locations list
+        const LOCATIONS = ["Sadar", "Lalkurti", "Islamabad", "FaisalMasjid"];
+        const SPEED_KMH = 40; 
+
+        // Utility to get route details
+        function getRouteDetails(start, end) {
+            return ROUTES[`${start}-${end}`] || null;
+        }
+
+        // Utility to calculate ETA in minutes
+        function calculateETA(distance) {
+            return Math.round((distance / SPEED_KMH) * 60);
+        }
+
+        // ============================================
+        // CORE ACTIONS
+        // ============================================
+
+        function addRiderAction() {
+            const nameInput = document.getElementById('riderNameInput');
+            const name = nameInput.value.trim();
+            const statusDiv = document.getElementById('riderStatus');
+            
+            statusDiv.textContent = '';
+            statusDiv.classList.remove('text-red-600', 'text-green-600');
+
+            if (name.length > 2) {
+                riderQueue.push(name);
+                nameInput.value = '';
+                statusDiv.textContent = `${name} added to queue.`;
+                statusDiv.classList.add('text-green-600');
+                updateUI();
+            } else {
+                statusDiv.textContent = 'Please enter a valid name.';
+                statusDiv.classList.add('text-red-600');
+            }
+        }
+
+        function assignRideAction() {
+            const startLocation = document.getElementById('startLocation').value;
+            const endLocation = document.getElementById('endLocation').value;
+            const outputDiv = document.getElementById('matchOutput');
+            const statusDiv = document.getElementById('assignmentStatus');
+
+            statusDiv.textContent = '';
+            statusDiv.classList.remove('text-red-600', 'text-green-600');
+
+
+            if (riderQueue.length === 0) {
+                outputDiv.innerHTML = '<p class="text-red-500 font-semibold">No riders waiting in the queue.</p>';
+                statusDiv.textContent = 'Queue is empty.';
+                statusDiv.classList.add('text-red-600');
+                return;
+            }
+
+            const route = getRouteDetails(startLocation, endLocation);
+            if (!route) {
+                statusDiv.textContent = 'Error: Invalid or unsupported fixed route combination.';
+                statusDiv.classList.add('text-red-600');
+                outputDiv.innerHTML = '<p class="text-gray-400 italic">Dispatch failed. Select a valid fixed route.</p>';
+                return;
+            }
+            
+            // Dequeue rider (FIFO)
+            const rider = riderQueue.shift();
+            const assignedDriver = DRIVERS[route.driverIndex];
+            const distance = route.distance;
+            const eta = calculateETA(distance);
+
+            // Output HTML generation
+            const outputHTML = `
+                <div class="space-y-2 p-4 bg-white rounded-lg shadow-lg border-l-4 border-green-500">
+                    <p class="text-xl font-bold text-green-700">✔ Ride Matched!</p>
+                    <p><strong>Passenger:</strong> <span class="font-medium text-indigo-600">${rider}</span></p>
+                    <p><strong>Route:</strong> ${startLocation} &rarr; ${endLocation}</p>
+                    <p><strong>Driver:</strong> <span class="font-medium text-red-600">${assignedDriver}</span></p>
+                    <p><strong>Distance:</strong> ${distance} km</p>
+                    <p><strong>ETA:</strong> <span class="font-bold">${eta} minutes</span></p>
+                    <p class="text-xs text-gray-500 italic">Driver ${assignedDriver} is dedicated to this route.</p>
+                </div>
+            `;
+            outputDiv.innerHTML = outputHTML;
+            statusDiv.textContent = 'Dispatch successful!';
+            statusDiv.classList.add('text-green-600');
+
+            // Reset selectors
+            document.getElementById('startLocation').value = '';
+            document.getElementById('endLocation').value = '';
+
+            updateUI();
+        }
+
+        // ============================================
+        // UI UPDATE FUNCTIONS
+        // ============================================
+
+        function updateRiderQueueDisplay() {
+            const displayDiv = document.getElementById('riderQueueDisplay');
+            const countP = document.getElementById('queueCount');
+            
+            if (riderQueue.length === 0) {
+                displayDiv.innerHTML = '<p class="text-gray-400 italic p-2 text-center">The ride queue is currently empty. Add a rider!</p>';
+                countP.textContent = '0 riders waiting.';
+                return;
+            }
+
+            displayDiv.innerHTML = riderQueue.map((rider, index) => `
+                <div class="flex items-center p-3 bg-gray-50 rounded-lg shadow-sm ${index === 0 ? 'border-2 border-purple-400' : ''}">
+                    <span class="font-bold text-sm w-8 text-center text-gray-500">${index + 1}.</span>
+                    <span class="flex-grow font-medium">${rider}</span>
+                    <span class="text-xs ${index === 0 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'} px-2 py-0.5 rounded-full">
+                        ${index === 0 ? 'NEXT UP' : 'Waiting'}
+                    </span>
+                </div>
+            `).join('');
+
+            countP.textContent = `${riderQueue.length} rider(s) waiting.`;
+        }
+
+        function updateDriverDisplay() {
+            const driverListDiv = document.getElementById('driverList');
+            // Display all drivers, indicating their fixed presence in the pool.
+            driverListDiv.innerHTML = DRIVERS.map((driver) => `
+                <span class="px-4 py-2 text-sm font-semibold rounded-full shadow-md transition duration-300
+                    bg-red-100 text-red-700 border border-red-300">
+                    ${driver}
+                </span>
+            `).join('');
+        }
+
+        function populateRouteSelectors() {
+            const startSelect = document.getElementById('startLocation');
+            const endSelect = document.getElementById('endLocation');
+            const routeList = document.getElementById('routeList');
+
+            // Ensure selectors are cleared before repopulating
+            startSelect.innerHTML = '<option value="">Select Start</option>';
+            endSelect.innerHTML = '<option value="">Select End</option>';
+
+
+            LOCATIONS.forEach(loc => {
+                const startOpt = document.createElement('option');
+                startOpt.value = loc;
+                startOpt.textContent = loc;
+                startSelect.appendChild(startOpt);
+                
+                const endOpt = document.createElement('option');
+                endOpt.value = loc;
+                endOpt.textContent = loc;
+                endSelect.appendChild(endOpt);
+            });
+
+            // Display fixed routes
+            routeList.innerHTML = Object.keys(ROUTES).map(routeKey => {
+                const [start, end] = routeKey.split('-');
+                const { distance, driverIndex } = ROUTES[routeKey];
+                const driverName = DRIVERS[driverIndex];
+                const eta = calculateETA(distance);
+
+                return `
+                    <li class="p-1 text-sm">
+                        <span class="font-semibold text-indigo-700">${start} &rarr; ${end}</span> 
+                        ( ${distance}km / ~${eta}min) 
+                        <span class="text-xs text-red-500">(Driver: ${driverName})</span>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        function updateUI() {
+            updateRiderQueueDisplay();
+            updateDriverDisplay();
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        window.onload = () => {
+            // Rider queue starts empty as requested.
+            populateRouteSelectors();
+            updateUI();
+        };
+
+    </script>
+
+</body>
+</html>
